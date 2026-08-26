@@ -108,6 +108,35 @@
                 '<canvas id="game-canvas"></canvas>' +
                 '</div>' +
                 '<script>' +
+                // Bypass KA img-src CSP restrictions by converting data: images to blob: URLs dynamically
+                'let _imgDesc = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "src");' +
+                'if (_imgDesc && _imgDesc.set) {' +
+                '    Object.defineProperty(HTMLImageElement.prototype, "src", {' +
+                '        set: function(url) {' +
+                '            if (typeof url === "string" && url.indexOf("data:") === 0) {' +
+                '                try {' +
+                '                    let commaIdx = url.indexOf(",");' +
+                '                    let dataPart = url.substring(commaIdx + 1);' +
+                '                    let mimeMatch = url.match(new RegExp("data:(.*?);"));' +
+                '                    let mime = mimeMatch ? mimeMatch[1] : "image/png";' +
+                '                    let raw = atob(dataPart);' +
+                '                    let arr = new Uint8Array(raw.length);' +
+                '                    let i = 0;' +
+                '                    while (i < raw.length) {' +
+                '                        arr[i] = raw.charCodeAt(i);' +
+                '                        i++;' +
+                '                    }' +
+                '                    let blob = new Blob([arr], { type: mime });' +
+                '                    url = URL.createObjectURL(blob);' +
+                '                } catch (err) {}' +
+                '            }' +
+                '            return _imgDesc.set.call(this, url);' +
+                '        },' +
+                '        get: function() {' +
+                '            return _imgDesc.get.call(this);' +
+                '        }' +
+                '    });' +
+                '}' +
                 'window.minecraftOpts = ["game_frame", ""];' +
                 'window.eaglercraftXOpts = {' +
                 '    container: "game_frame",' +
